@@ -98,6 +98,7 @@ export const useStore = create<StoreState>((set, get) => ({
         const projects = [newProject, ...get().projects];
         set({ projects });
         saveLocal(PROJECTS_KEY, projects);
+        get().syncToCloud();
     },
 
     updateProject: (projectId, name) => {
@@ -106,6 +107,7 @@ export const useStore = create<StoreState>((set, get) => ({
         );
         set({ projects });
         saveLocal(PROJECTS_KEY, projects);
+        get().syncToCloud();
     },
 
     deleteProject: (projectId) => {
@@ -114,6 +116,7 @@ export const useStore = create<StoreState>((set, get) => ({
         set({ projects, items });
         saveLocal(PROJECTS_KEY, projects);
         saveLocal(ITEMS_KEY, items);
+        get().syncToCloud();
     },
 
     setCurrentProject: (projectId) => {
@@ -138,6 +141,7 @@ export const useStore = create<StoreState>((set, get) => ({
         const items = [...get().items, newItem];
         set({ items });
         saveLocal(ITEMS_KEY, items);
+        get().syncToCloud();
     },
 
     deleteItem: (itemId) => {
@@ -158,6 +162,7 @@ export const useStore = create<StoreState>((set, get) => ({
         const items = allItems.filter(i => !idsToDelete.includes(i.id));
         set({ items, currentFolderId: newFolderId });
         saveLocal(ITEMS_KEY, items);
+        get().syncToCloud();
     },
 
     moveItem: (itemId, newParentId) => {
@@ -167,6 +172,7 @@ export const useStore = create<StoreState>((set, get) => ({
         );
         set({ items });
         saveLocal(ITEMS_KEY, items);
+        get().syncToCloud();
     },
 
     updateItem: (itemId, updates) => {
@@ -175,14 +181,35 @@ export const useStore = create<StoreState>((set, get) => ({
         );
         set({ items });
         saveLocal(ITEMS_KEY, items);
+        get().syncToCloud();
     },
 
     syncToCloud: async () => {
         const gasUrl = getGasUrl();
         if (!gasUrl) return;
+        if (get().isSyncing) return;
 
         set({ isSyncing: true });
         try {
+            // Rule 3: download → merge → upload (never blind upload)
+            const params = new URLSearchParams({
+                action: 'loadAll',
+                accountId: get().accountId || '',
+            });
+            const dlRes = await fetch(`${gasUrl}?${params}`);
+            if (dlRes.ok) {
+                const dlResult = await dlRes.json();
+                if (dlResult.success) {
+                    const remoteProjects: Project[] = dlResult.projects || [];
+                    const remoteItems: Item[] = dlResult.items || [];
+                    const mergedProjects = mergeByIdAndDate(get().projects, remoteProjects);
+                    const mergedItems = mergeByIdAndDate(get().items, remoteItems);
+                    set({ projects: mergedProjects, items: mergedItems });
+                    saveLocal(PROJECTS_KEY, mergedProjects);
+                    saveLocal(ITEMS_KEY, mergedItems);
+                }
+            }
+
             const res = await fetch(gasUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
