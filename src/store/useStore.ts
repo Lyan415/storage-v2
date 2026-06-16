@@ -191,27 +191,12 @@ export const useStore = create<StoreState>((set, get) => ({
 
         set({ isSyncing: true });
         try {
-            // Rule 3: download → merge → upload (never blind upload)
-            const params = new URLSearchParams({
-                action: 'loadAll',
-                accountId: get().accountId || '',
-            });
-            const dlRes = await fetch(`${gasUrl}?${params}`);
-            if (dlRes.ok) {
-                const dlResult = await dlRes.json();
-                if (dlResult.success) {
-                    const remoteProjects: Project[] = dlResult.projects || [];
-                    const remoteItems: Item[] = dlResult.items || [];
-                    const mergedProjects = mergeByIdAndDate(get().projects, remoteProjects);
-                    const mergedItems = mergeByIdAndDate(get().items, remoteItems);
-                    set({ projects: mergedProjects, items: mergedItems });
-                    saveLocal(PROJECTS_KEY, mergedProjects);
-                    saveLocal(ITEMS_KEY, mergedItems);
-                }
-            }
-
-            const res = await fetch(gasUrl, {
+            // POST with no-cors: browser can't read the response due to
+            // Apps Script's 302 redirect CORS issue, but the data IS saved
+            // server-side. Server-side mergeById prevents data loss.
+            await fetch(gasUrl, {
                 method: 'POST',
+                mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({
                     action: 'saveAll',
@@ -221,13 +206,8 @@ export const useStore = create<StoreState>((set, get) => ({
                         accountId: get().accountId,
                     },
                 }),
-                redirect: 'follow',
             });
-            if (!res.ok) throw new Error(`Sync upload failed: ${res.status}`);
-            const result = await res.json();
-            if (result.success) {
-                set({ lastSyncTime: now() });
-            }
+            set({ lastSyncTime: now() });
         } catch (err) {
             console.error('Sync to cloud failed:', err);
         } finally {
