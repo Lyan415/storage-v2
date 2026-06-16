@@ -5,6 +5,10 @@ export const ACCOUNTS: Account[] = [
     { label: '小章魚', id: 'octopus' },
 ];
 
+export const ACCOUNT_GAS_URLS: Record<string, string> = {
+    lyan: 'https://script.google.com/macros/s/AKfycbwZANZ-IIoWmXXJ1JjbnLNMzC3worT78rJrA-i91Hb6yZJiOTKrwvm8jMsX_VWTwBwC/exec',
+};
+
 // Symbol keys: ◆=1, ●=2, ▲=3, ■=4
 // Lyan: ●●●●▲▲■■ → "22223344"
 // 小章魚: ●●●●●●●● → "22222222"

@@ -14,6 +14,7 @@ export const ProjectListView: React.FC = () => {
 
     useEffect(() => {
         useStore.getState().fetchProjects();
+        syncFromCloud();
     }, []);
 
     const handleCreate = () => {

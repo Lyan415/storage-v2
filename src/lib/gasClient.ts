@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'storage-v2-gas-url';
 const URL_REGEX = /^https:\/\/script\.google\.com\/.*\/exec/;
 
-let DEFAULT_GAS_URL = '';
+let DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwZANZ-IIoWmXXJ1JjbnLNMzC3worT78rJrA-i91Hb6yZJiOTKrwvm8jMsX_VWTwBwC/exec';
 
 export function setDefaultGasUrl(url: string): void {
     DEFAULT_GAS_URL = url;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Package, ChevronDown, Sparkles, Eye, EyeOff, Delete } from 'lucide-react';
-import { ACCOUNTS, verifyPassword, saveSession } from '../../lib/auth';
+import { ACCOUNTS, ACCOUNT_GAS_URLS, verifyPassword, saveSession } from '../../lib/auth';
 import { getAIConfig, saveAIConfig, clearAIConfig, type AIProvider } from '../../lib/aiConfig';
 import { getGasUrl, saveGasUrl } from '../../lib/gasClient';
 
@@ -46,6 +46,15 @@ export const LoginView = () => {
             setGasUrlSaved(true);
         }
     }, []);
+
+    const handleAccountChange = (accountId: string) => {
+        setSelectedAccount(accountId);
+        const boundUrl = ACCOUNT_GAS_URLS[accountId];
+        if (boundUrl && !gasUrl) {
+            setGasUrlLocal(boundUrl);
+            setGasUrlSaved(false);
+        }
+    };
 
     const handleShapePress = (key: string) => {
         if (sequence.length >= 12) return;
@@ -120,7 +129,7 @@ export const LoginView = () => {
                 <div className="relative">
                     <select
                         value={selectedAccount}
-                        onChange={(e) => setSelectedAccount(e.target.value)}
+                        onChange={(e) => handleAccountChange(e.target.value)}
                         className="block w-full appearance-none rounded-lg border border-gray-300 bg-white px-4 py-3 pr-10 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 text-sm"
                     >
                         <option value="">請選擇帳號</option>
