@@ -33,6 +33,7 @@ interface StoreState {
     history: (string | null)[];
     isLoading: boolean;
     isSyncing: boolean;
+    initialSyncDone: boolean;
     lastSyncTime: string | null;
 
     setAccountId: (id: string | null) => void;
@@ -77,6 +78,7 @@ export const useStore = create<StoreState>((set, get) => ({
     history: [],
     isLoading: false,
     isSyncing: false,
+    initialSyncDone: false,
     lastSyncTime: null,
 
     setAccountId: (id) => set({ accountId: id }),
@@ -187,6 +189,7 @@ export const useStore = create<StoreState>((set, get) => ({
     syncToCloud: async () => {
         const gasUrl = getGasUrl();
         if (!gasUrl) return;
+        if (!get().initialSyncDone) return;
 
         try {
             const res = await fetch(gasUrl, {
@@ -229,21 +232,20 @@ export const useStore = create<StoreState>((set, get) => ({
                 const remoteProjects: Project[] = result.projects || [];
                 const remoteItems: Item[] = result.items || [];
 
-                // Merge: prefer more recent data
                 const localProjects = get().projects;
                 const localItems = get().items;
 
                 const mergedProjects = mergeByIdAndDate(localProjects, remoteProjects);
                 const mergedItems = mergeByIdAndDate(localItems, remoteItems);
 
-                set({ projects: mergedProjects, items: mergedItems, lastSyncTime: now() });
+                set({ projects: mergedProjects, items: mergedItems, lastSyncTime: now(), initialSyncDone: true });
                 saveLocal(PROJECTS_KEY, mergedProjects);
                 saveLocal(ITEMS_KEY, mergedItems);
             }
         } catch (err) {
             console.error('Sync from cloud failed:', err);
         } finally {
-            set({ isSyncing: false });
+            set({ isSyncing: false, initialSyncDone: true });
         }
     },
 

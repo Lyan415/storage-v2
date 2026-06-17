@@ -64,17 +64,14 @@ function saveAll(body) {
   const projects = data.projects || [];
   const items = data.items || [];
 
-  // Save projects
+  // Overwrite (not merge) — client sends its complete state after
+  // having merged cloud data via syncFromCloud on page load.
+  // This allows deletes to propagate correctly.
   const projectsSheet = ss.getSheetByName('Projects');
-  const existingProjects = sheetToObjects(projectsSheet);
-  const mergedProjects = mergeById(existingProjects, projects);
-  objectsToSheet(projectsSheet, mergedProjects, ['id', 'name', 'ownerId', 'createdAt']);
+  objectsToSheet(projectsSheet, projects, ['id', 'name', 'ownerId', 'createdAt']);
 
-  // Save items
   const itemsSheet = ss.getSheetByName('Items');
-  const existingItems = sheetToObjects(itemsSheet);
-  const mergedItems = mergeById(existingItems, items);
-  objectsToSheet(itemsSheet, mergedItems, ['id', 'name', 'imageUrl', 'note', 'parentId', 'projectId', 'createdAt']);
+  objectsToSheet(itemsSheet, items, ['id', 'name', 'imageUrl', 'note', 'parentId', 'projectId', 'createdAt']);
 
   return jsonResponse({ success: true, timestamp: now() });
 }
@@ -171,12 +168,14 @@ function sheetToObjects(sheet) {
 }
 
 function objectsToSheet(sheet, objects, headers) {
-  if (!sheet || objects.length === 0) return;
+  if (!sheet) return;
 
   // Clear existing data (keep header)
   if (sheet.getLastRow() > 1) {
     sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
   }
+
+  if (objects.length === 0) return;
 
   // Rule 1: force text format on date columns before writing
   const dateColIndices = headers.reduce((acc, h, i) => {
