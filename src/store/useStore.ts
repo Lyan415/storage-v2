@@ -187,16 +187,10 @@ export const useStore = create<StoreState>((set, get) => ({
     syncToCloud: async () => {
         const gasUrl = getGasUrl();
         if (!gasUrl) return;
-        if (get().isSyncing) return;
 
-        set({ isSyncing: true });
         try {
-            // POST with no-cors: browser can't read the response due to
-            // Apps Script's 302 redirect CORS issue, but the data IS saved
-            // server-side. Server-side mergeById prevents data loss.
-            await fetch(gasUrl, {
+            const res = await fetch(gasUrl, {
                 method: 'POST',
-                mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify({
                     action: 'saveAll',
@@ -206,12 +200,14 @@ export const useStore = create<StoreState>((set, get) => ({
                         accountId: get().accountId,
                     },
                 }),
+                redirect: 'follow',
             });
-            set({ lastSyncTime: now() });
+            const result = await res.json();
+            if (result.success) {
+                set({ lastSyncTime: now() });
+            }
         } catch (err) {
             console.error('Sync to cloud failed:', err);
-        } finally {
-            set({ isSyncing: false });
         }
     },
 

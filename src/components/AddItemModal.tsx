@@ -64,6 +64,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({ isOpen, onClose }) =
                 parentId: currentFolderId,
                 projectId: currentProjectId || 'default',
             });
+            await useStore.getState().syncToCloud();
             setName(''); setNote(''); setImageFile(null); setImagePreview(null);
             onClose();
         } catch (err: unknown) {
