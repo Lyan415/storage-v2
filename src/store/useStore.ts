@@ -229,18 +229,17 @@ export const useStore = create<StoreState>((set, get) => ({
             const result = await res.json();
 
             if (result.success) {
+                // Cloud is the single source of truth. Replace local with
+                // remote (not union-merge) so deletes propagate and stale
+                // local data gets cleared. Safe because every mutation
+                // immediately uploads, so local-only changes are already
+                // in the cloud before the next load.
                 const remoteProjects: Project[] = result.projects || [];
                 const remoteItems: Item[] = result.items || [];
 
-                const localProjects = get().projects;
-                const localItems = get().items;
-
-                const mergedProjects = mergeByIdAndDate(localProjects, remoteProjects);
-                const mergedItems = mergeByIdAndDate(localItems, remoteItems);
-
-                set({ projects: mergedProjects, items: mergedItems, lastSyncTime: now(), initialSyncDone: true });
-                saveLocal(PROJECTS_KEY, mergedProjects);
-                saveLocal(ITEMS_KEY, mergedItems);
+                set({ projects: remoteProjects, items: remoteItems, lastSyncTime: now(), initialSyncDone: true });
+                saveLocal(PROJECTS_KEY, remoteProjects);
+                saveLocal(ITEMS_KEY, remoteItems);
             }
         } catch (err) {
             console.error('Sync from cloud failed:', err);
@@ -300,15 +299,3 @@ export const useStore = create<StoreState>((set, get) => ({
         return path;
     },
 }));
-
-function mergeByIdAndDate<T extends { id: string; createdAt: string }>(local: T[], remote: T[]): T[] {
-    const map = new Map<string, T>();
-    for (const item of local) map.set(item.id, item);
-    for (const item of remote) {
-        const existing = map.get(item.id);
-        if (!existing || item.createdAt > existing.createdAt) {
-            map.set(item.id, item);
-        }
-    }
-    return Array.from(map.values());
-}

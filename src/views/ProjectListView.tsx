@@ -90,7 +90,7 @@ export const ProjectListView: React.FC = () => {
                     </button>
                 )}
             </div>
-            <p className="text-center text-xs text-gray-300 mt-4">v2.1</p>
+            <p className="text-center text-xs text-gray-300 mt-4">v2.2</p>
         </div>
     );
 };
