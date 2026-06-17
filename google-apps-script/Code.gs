@@ -7,7 +7,7 @@ function doGet(e) {
   const action = e.parameter.action;
 
   if (action === 'ping') {
-    return jsonResponse({ success: true, version: '1.0', timestamp: now() });
+    return jsonResponse({ success: true, version: '2.0', timestamp: now() });
   }
 
   if (action === 'loadAll') {
@@ -188,19 +188,6 @@ function objectsToSheet(sheet, objects, headers) {
 
   const rows = objects.map(obj => headers.map(h => obj[h] != null ? String(obj[h]) : ''));
   sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
-}
-
-function mergeById(existing, incoming) {
-  const map = {};
-  existing.forEach(item => { if (item.id) map[item.id] = item; });
-  incoming.forEach(item => {
-    if (!item.id) return;
-    const ex = map[item.id];
-    if (!ex || (item.createdAt && (!ex.createdAt || item.createdAt > ex.createdAt))) {
-      map[item.id] = item;
-    }
-  });
-  return Object.values(map);
 }
 
 function now() {
